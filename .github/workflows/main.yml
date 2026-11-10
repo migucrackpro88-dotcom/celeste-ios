@@ -1,0 +1,45 @@
+yaml
+name: Build IPA
+on:
+  workflow_dispatch:
+    inputs:
+      game_url:
+        description: 'Enlace directo de file.io con CelesteFiles.zip'
+        required: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Download Game Files
+      run: |
+        curl -L -o CelesteFiles.zip "${{ github.event.inputs.game_url }}"
+        unzip CelesteFiles.zip -d .
+        mkdir -p Content
+        mv -f Celeste.exe Content/ 2>/dev/null || true
+        mv -f *.dll Content/ 2>/dev/null || true
+
+    - name: Build Project
+      run: |
+        chmod +x build.sh
+        ./build.sh
+
+    - name: Package IPA
+      run: |
+        mkdir Payload
+        mv Celeste.app Payload/
+        zip -r celestemeow.ipa Payload
+
+    - name: Upload IPA
+      uses: actions/upload-artifact@v4
+      with:
+        name: celestemeow-ipa
+        path: celestemeow.ipa
