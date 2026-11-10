@@ -13,16 +13,34 @@ jobs:
     - name: Checkout base code
       uses: actions/checkout@v4
       with:
-        submodules: false # No descargamos submódulos todavía
+        submodules: false # No descargamos nada automático todavía
 
-    - name: Fix Submodules URL Protocol
+    - name: Force Global HTTPS Protocol
       run: |
-        # Reemplaza directamente en el archivo de configuración el protocolo obsoleto git:// por https://
+        # Fuerza a todo el sistema Git a redirigir cualquier enlace git:// hacia https:// de forma obligatoria y profunda
+        git config --global url."https://github.com".insteadOf "git://://github.com"
+        
+        # Parcheamos el archivo del nivel raíz por seguridad
         if [ -f ".gitmodules" ]; then
-          sed -i 's|git://://github.com|https://://github.com|g' .gitmodules
+          sed -i 's|git://://github.com|https://github.com|g' .gitmodules
         fi
-        # Sincroniza y descarga los submódulos de forma manual y segura
+        
+        # Sincroniza e inicializa los submódulos base
         git submodule sync
+        git submodule update --init
+        
+        # Entramos a la carpeta descargada de FNA y forzamos el parche también en sus submódulos internos ocultos
+        if [ -d "FNA" ]; then
+          cd FNA
+          git config --local url."https://github.com".insteadOf "git://://github.com"
+          if [ -f ".gitmodules" ]; then
+            sed -i 's|git://://github.com|https://github.com|g' .gitmodules
+          fi
+          git submodule sync
+          cd ..
+        fi
+        
+        # Descarga final profunda de todos los componentes de audio y video sin excepciones
         git submodule update --init --recursive
 
     - name: Setup .NET
