@@ -10,15 +10,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Fix Git Protocol
-      run: |
-        # Fuerza a Git a usar HTTPS en lugar del protocolo antiguo git:// para evitar bloqueos
-        git config --global url."https://github.com".insteadOf "git://://github.com"
-
-    - name: Checkout code
+    - name: Checkout base code
       uses: actions/checkout@v4
       with:
-        submodules: recursive
+        submodules: false # No descargamos submódulos todavía
+
+    - name: Fix Submodules URL Protocol
+      run: |
+        # Reemplaza directamente en el archivo de configuración el protocolo obsoleto git:// por https://
+        if [ -f ".gitmodules" ]; then
+          sed -i 's|git://://github.com|https://://github.com|g' .gitmodules
+        fi
+        # Sincroniza y descarga los submódulos de forma manual y segura
+        git submodule sync
+        git submodule update --init --recursive
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
