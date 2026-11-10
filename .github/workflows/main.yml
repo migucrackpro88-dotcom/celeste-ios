@@ -23,25 +23,20 @@ jobs:
         curl -L -o CelesteFiles.zip "${{ github.event.inputs.game_url }}"
         mkdir -p game_input
         unzip CelesteFiles.zip -d game_input/
-        
-        # Corrección de estructura interna por si acaso
-        if [ -d "game_input/Content" ]; then
-          mkdir -p game_input/Celeste.app
-          mv game_input/Content game_input/Celeste.app/ 2>/dev/null || true
-          mv game_input/Celeste.exe game_input/Celeste.app/ 2>/dev/null || true
-          mv game_input/*.dll game_input/Celeste.app/ 2>/dev/null || true
-        fi
 
-    - name: Build Project
+    - name: Direct .NET Build
       run: |
-        chmod +x build.sh
-        # Forzamos al script a leer la carpeta que creamos pasándole la ruta como argumento
-        ./build.sh "$(pwd)/game_input" || ./build.sh "$(pwd)/game_input/Celeste.app"
+        # Compilación nativa directa del archivo de solución de Celeste para iOS
+        dotnet build celestemeow.sln -c Release /p:Platform=iPhone
 
     - name: Package IPA
       run: |
-        mkdir Payload
-        mv Celeste.app Payload/ 2>/dev/null || mv *.app Payload/ 2>/dev/null || true
+        mkdir -p Payload/Celeste.app
+        # Mapeamos los archivos compilados y los unimos con tu carpeta Content
+        cp -r celestemeow/bin/iPhone/Release/* Payload/Celeste.app/ 2>/dev/null || cp -r bin/Release/* Payload/Celeste.app/ 2>/dev/null || true
+        cp -r game_input/Content Payload/Celeste.app/
+        cp -f game_input/Celeste.exe Payload/Celeste.app/ 2>/dev/null || true
+        cp -f game_input/*.dll Payload/Celeste.app/ 2>/dev/null || true
         zip -r celestemeow.ipa Payload
 
     - name: Upload IPA
