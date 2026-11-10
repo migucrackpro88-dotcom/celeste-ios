@@ -10,38 +10,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout base code
+    - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        submodules: false # No descargamos nada automático todavía
-
-    - name: Force Global HTTPS Protocol
-      run: |
-        # Fuerza a todo el sistema Git a redirigir cualquier enlace git:// hacia https:// de forma obligatoria y profunda
-        git config --global url."https://github.com".insteadOf "git://://github.com"
-        
-        # Parcheamos el archivo del nivel raíz por seguridad
-        if [ -f ".gitmodules" ]; then
-          sed -i 's|git://://github.com|https://github.com|g' .gitmodules
-        fi
-        
-        # Sincroniza e inicializa los submódulos base
-        git submodule sync
-        git submodule update --init
-        
-        # Entramos a la carpeta descargada de FNA y forzamos el parche también en sus submódulos internos ocultos
-        if [ -d "FNA" ]; then
-          cd FNA
-          git config --local url."https://github.com".insteadOf "git://://github.com"
-          if [ -f ".gitmodules" ]; then
-            sed -i 's|git://://github.com|https://github.com|g' .gitmodules
-          fi
-          git submodule sync
-          cd ..
-        fi
-        
-        # Descarga final profunda de todos los componentes de audio y video sin excepciones
-        git submodule update --init --recursive
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -54,9 +24,12 @@ jobs:
         mkdir -p game_input
         unzip CelesteFiles.zip -d game_input/
 
-    - name: Direct .NET Build
+    - name: Direct .NET Build (Using Game Assets)
       run: |
-        dotnet build celestemeow.sln -c Release /p:Platform=iPhone
+        # Saltamos el archivo de solución general y compilamos únicamente el binario de celestemeow
+        # vinculando las referencias directamente a los archivos que subiste
+        cd celestemeow
+        dotnet build celestemeow.csproj -c Release /p:Platform=iPhone /p:ReferencePath="../game_input"
 
     - name: Package IPA
       run: |
