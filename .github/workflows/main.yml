@@ -12,6 +12,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        submodules: recursive # Descarga de forma obligatoria las librerías FNA faltantes
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -26,13 +28,11 @@ jobs:
 
     - name: Direct .NET Build
       run: |
-        # Compilación nativa directa del archivo de solución de Celeste para iOS
         dotnet build celestemeow.sln -c Release /p:Platform=iPhone
 
     - name: Package IPA
       run: |
         mkdir -p Payload/Celeste.app
-        # Mapeamos los archivos compilados y los unimos con tu carpeta Content
         cp -r celestemeow/bin/iPhone/Release/* Payload/Celeste.app/ 2>/dev/null || cp -r bin/Release/* Payload/Celeste.app/ 2>/dev/null || true
         cp -r game_input/Content Payload/Celeste.app/
         cp -f game_input/Celeste.exe Payload/Celeste.app/ 2>/dev/null || true
