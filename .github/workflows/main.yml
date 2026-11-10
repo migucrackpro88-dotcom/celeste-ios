@@ -23,11 +23,16 @@ jobs:
         curl -L -o CelesteFiles.zip "${{ github.event.inputs.game_url }}"
         mkdir -p game_input
         unzip CelesteFiles.zip -d game_input/
+        
+        # Si los archivos quedaron dentro de una subcarpeta (como 'Celeste IOS'), los saca a la raíz de game_input
+        if [ -d "game_input/Celeste IOS" ]; then
+          mv game_input/"Celeste IOS"/* game_input/ 2>/dev/null || true
+        elif [ -d "game_input/"* ]; then
+          mv game_input/*/* game_input/ 2>/dev/null || true
+        fi
 
     - name: Direct .NET Build (Using Game Assets)
       run: |
-        # Saltamos el archivo de solución general y compilamos únicamente el binario de celestemeow
-        # vinculando las referencias directamente a los archivos que subiste
         cd celestemeow
         dotnet build celestemeow.csproj -c Release /p:Platform=iPhone /p:ReferencePath="../game_input"
 
