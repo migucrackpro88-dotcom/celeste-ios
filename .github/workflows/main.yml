@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       game_url:
-        description: 'Enlace directo de file.io con CelesteFiles.zip'
+        description: 'Enlace directo de Filebin con CelesteFiles.zip'
         required: true
 
 jobs:
@@ -18,23 +18,30 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    - name: Download Game Files
+    - name: Download and Prepare Game Files
       run: |
         curl -L -o CelesteFiles.zip "${{ github.event.inputs.game_url }}"
-        unzip CelesteFiles.zip -d .
-        mkdir -p Content
-        mv -f Celeste.exe Content/ 2>/dev/null || true
-        mv -f *.dll Content/ 2>/dev/null || true
+        mkdir -p game_input
+        unzip CelesteFiles.zip -d game_input/
+        
+        # Corrección de estructura interna por si acaso
+        if [ -d "game_input/Content" ]; then
+          mkdir -p game_input/Celeste.app
+          mv game_input/Content game_input/Celeste.app/ 2>/dev/null || true
+          mv game_input/Celeste.exe game_input/Celeste.app/ 2>/dev/null || true
+          mv game_input/*.dll game_input/Celeste.app/ 2>/dev/null || true
+        fi
 
     - name: Build Project
       run: |
         chmod +x build.sh
-        ./build.sh
+        # Forzamos al script a leer la carpeta que creamos pasándole la ruta como argumento
+        ./build.sh "$(pwd)/game_input" || ./build.sh "$(pwd)/game_input/Celeste.app"
 
     - name: Package IPA
       run: |
         mkdir Payload
-        mv Celeste.app Payload/
+        mv Celeste.app Payload/ 2>/dev/null || mv *.app Payload/ 2>/dev/null || true
         zip -r celestemeow.ipa Payload
 
     - name: Upload IPA
