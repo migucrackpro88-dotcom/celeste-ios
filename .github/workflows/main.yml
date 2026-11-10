@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest # Cambiamos a la Mac oficial con SDK de iOS incorporado
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -24,7 +24,7 @@ jobs:
         mkdir -p game_input
         unzip CelesteFiles.zip -d game_input/
         
-        # Si los archivos quedaron dentro de una subcarpeta (como 'Celeste IOS'), los saca a la raíz de game_input
+        # Corrección automática si tus archivos venían metidos en 'Celeste IOS'
         if [ -d "game_input/Celeste IOS" ]; then
           mv game_input/"Celeste IOS"/* game_input/ 2>/dev/null || true
         elif [ -d "game_input/"* ]; then
